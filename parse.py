@@ -4,6 +4,7 @@ import os, sys
 import pymongo # pip install pymongo
 import fileinput
 import subprocess
+from sets import Set
 import re
 
 def function(filename, name, calls, retns, blocks):
@@ -42,6 +43,9 @@ def main():
     db = pymongo.MongoClient().gcov[args.name]
     db.drop()
 
+    # error file set
+    error_file_set = Set()
+
     # Filter out missing files
     for file in [f for f in args.gcov if not os.path.exists(f)]:
         print "File %r does not exist" % file
@@ -61,9 +65,12 @@ def main():
                 db.save(func)
             func = None
 
+        # handle 1* (https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Invoking-Gcov.html adds asterix)
+        words[0] = words[0].replace('*', '')
+
         # Line was not executed.  Fake a 'zero' count.
         # -:   54:#ifndef PR_MCE_KILL_SET
-        if words[0] in ('#####','-','$$$$$'):
+        if words[0] in ('#####','-','$$$$$', '%%%%%'):
             if not func:
                 continue
             words[0] = '0'
@@ -73,6 +80,11 @@ def main():
         # This is only emitted with the '-u' flag
         if words[0] == 'unconditional':
             pass
+
+        # Pass call lines (gcc case)
+        if words[0] == 'call':
+            pass
+
 
         # Function statistics
         # function cpu_thread_is_idle called 38 returned 100% blocks executed 91%
@@ -86,10 +98,19 @@ def main():
         # Begin a source line
         # 1:   10:    if(argc == 1) {
         elif words[0].isdigit() and words[1].isdigit():
+            ## issues when gcov does not mark functions
+            if func is None:
+                if finput.filename() not in error_file_set:
+                    print "Error function not defined (might be an overwritten problem) at line " + line + " in file " + finput.filename()
+                    print "I wont warn for that file anymore"
+                    error_file_set.add(finput.filename())
+                continue
             count  = int(words[0])
             lineno = int(words[1])
             source = line.split(':',2)[-1].rstrip()
 
+            ##debug
+            ##print "func:" + func['filename'] + " " + func['name'] + "count: " + str(count) + " lineno: " + str(lineno)
             func['lines'].append(sourceline(lineno, source, count))
 
         # Begin a block within a source line
