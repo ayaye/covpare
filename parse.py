@@ -101,7 +101,7 @@ def main():
             ## issues when gcov does not mark functions
             if func is None:
                 if finput.filename() not in error_file_set:
-                    print "Error function not defined (might be an overwritten problem) at line " + line + " in file " + finput.filename()
+                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
                     print "I wont warn for that file anymore"
                     error_file_set.add(finput.filename())
                 continue
@@ -116,6 +116,13 @@ def main():
         # Begin a block within a source line
         # 1:   10-block  0
         elif words[1].endswith('-block'):
+            ## issues when gcov does not mark functions
+            if func is None:
+                if finput.filename() not in error_file_set:
+                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
+                    print "I wont warn for that file anymore"
+                    error_file_set.add(finput.filename())
+                continue
             count    = int(words[0].rstrip(':'))
             number   = int(words[2])
             func['lines'][-1]['blocks'].append(block(number, count))
@@ -130,6 +137,13 @@ def main():
         #
         # branch  0 never executed
         elif words[0] == 'branch':
+            ## issues when gcov does not mark functions
+            if func is None:
+                if finput.filename() not in error_file_set:
+                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
+                    print "I wont warn for that file anymore"
+                    error_file_set.add(finput.filename())
+                continue
             number = int(words[1])
             count  = 0
             if words[2] != 'never':
