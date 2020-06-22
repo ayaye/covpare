@@ -169,6 +169,12 @@ def adjust(function):
             function['lines'][i]['blocks'][j]['taken'] /= divisor
     return function
 
+def is_new_branch_taken(list_branch_a, list_branch_b):
+    for br_a, br_b in zip(list_branch_a, list_branch_b):
+        if br_a['taken'] == 0 and br_b['taken'] != 0:
+            return True
+    return False
+
 def line_diff():
     #
     # This gives us all of the functions, sorted by filename,
@@ -226,7 +232,9 @@ def line_diff():
             delta  = al['hits'] - bl['hits']
 
             if args.only_new and al['hits'] != 0:
-                continue
+                ## keep branches context
+                if not is_new_branch_taken(al['branches'], bl['branches']):
+                    continue
             if args.ignore_same and al['hits'] == bl['hits']:
                 continue
 
@@ -252,8 +260,24 @@ if args.function_diff:  function_diff()
 if args.call_diff:      call_diff()
 sys.exit()
 
-
 """
+def N_max_line():
+    keys = (('filename', 1), ('start', 1))
+    a.ensure_index(keys)
+    b.ensure_index(keys)
+    a_functions = a.find(default_query).sort(keys)
+    b_functions = b.find(default_query).sort(keys)
+
+    query = Q({'hits': {'$gt': m}})
+    a_func = set(a.find(query).distinct('name'))
+    b_func = set(b.find(query).distinct('name'))
+
+    a_max_hit = a.find(default_query).max('hits')
+    a_min_hit = a.find(default_query).min('hits')
+
+
+def N_min_line():
+
 for func_a in a.find():
     # pprint(func_a)
     name = func_a['name']
