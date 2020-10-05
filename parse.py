@@ -93,6 +93,8 @@ def main():
                 if func['lines']:
                     func['start'] = func['lines'][0]['lineno']
                 db.save(func)
+            if words[5] == "NAN":
+                words[5] = "0%"
             func = function(finput.filename(), words[1], int(words[3]), int(words[5][:-1]), int(words[-1][:-1]))
 
         # Begin a source line
