@@ -5,7 +5,7 @@ import argparse, os, sys, shutil, fileinput, re
 import pymongo # pip install pymongo
 from pprint import pprint
 from bson.code import Code
-from itertools import izip
+#from itertools import izip
 
 p    = argparse.ArgumentParser()
 
@@ -101,13 +101,13 @@ def call_diff():
         b_total_calls = total_calls(b)
         call_scale    = (a_total_calls/b_total_calls)
 
-    a.ensure_index('name')
-    b.ensure_index('name')
+    a.create_index('name')
+    b.create_index('name')
 
     a_cur = a.find(default_query).sort('name')
     b_cur = b.find(default_query).sort('name')
 
-    for fna, fnb in izip(a_cur, b_cur):
+    for fna, fnb in zip(a_cur, b_cur):
         a_call = fna['calls']
         b_call = fnb['calls']
 
@@ -116,7 +116,7 @@ def call_diff():
 
         # if a_call and (args.scale * a_call) < b_call:
         if (args.scale * a_call) < b_call:
-            print "%s %s %s" % (a_call, b_call, fna['name'])
+            print( "%s %s %s" % (a_call, b_call, fna['name']) )
 
 def function_diff():
     # For each function that was called in both runs, collate info
@@ -129,8 +129,8 @@ def function_diff():
     b_func = set(b.find(query).distinct('name'))
 
     # Show functions that only appear on either side
-    for func in sorted(a_func - b_func): print '-100%% %s: %s' % (args.a, func)
-    for func in sorted(b_func - a_func): print '+100%% %s: %s' % (args.b, func)
+    for func in sorted(a_func - b_func): print( '-100%% %s: %s' % (args.a, func) )
+    for func in sorted(b_func - a_func): print( '+100%% %s: %s' % (args.b, func) )
 
     # Functions to iterate through
     functions = sorted(a_func & b_func)
@@ -159,7 +159,7 @@ def function_diff():
             sign = '+'    if b_blocks > a_blocks else '-'
             name = args.b if b_blocks > a_blocks else args.a
 
-            print '%s%s%% %s: %s [%i %i%%] [%i:%i%%]' % (sign, delta_blocks, name, func, a_calls, a_blocks, b_calls, b_blocks)
+            print( '%s%s%% %s: %s [%i %i%%] [%i:%i%%]' % (sign, delta_blocks, name, func, a_calls, a_blocks, b_calls, b_blocks) )
 
 def adjust(function):
     divisor = float(function['calls'] or 1)
@@ -181,8 +181,8 @@ def line_diff():
     # and then in file order.
     #
     keys = (('filename', 1), ('start', 1))
-    a.ensure_index(keys)
-    b.ensure_index(keys)
+    a.create_index(keys)
+    b.create_index(keys)
     a_functions = a.find(default_query).sort(keys)
     b_functions = b.find(default_query).sort(keys)
 
@@ -194,8 +194,8 @@ def line_diff():
         except: pass
         os.makedirs(args.save)
 
-    for a_fn, b_fn in izip(a_functions, b_functions):
-        if not a['calls'] and not b['calls']:
+    for a_fn, b_fn in zip(a_functions, b_functions):
+        if (a['calls'] is not None) and (b['calls'] is not None):
             continue
 
         filename = a_fn['filename']
@@ -244,7 +244,7 @@ def line_diff():
             try:
                 out = u'%s:%-4i | %10s | %s ' % (filename, lineno, stats, source.decode('utf-8'))
             except:
-                print repr((filename, lineno, stats, source))
+                print( repr((filename, lineno, stats, source)) )
 
 
 
@@ -253,7 +253,7 @@ def line_diff():
                     f.write(out)
                     f.write('\n')
             else:
-                print out
+                print( out )
 
 if args.line_diff:      line_diff()
 if args.function_diff:  function_diff()

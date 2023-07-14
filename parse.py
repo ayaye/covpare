@@ -4,7 +4,7 @@ import os, sys
 import pymongo # pip install pymongo
 import fileinput
 import subprocess
-from sets import Set
+# from sets import Set
 import re
 
 def function(filename, name, calls, retns, blocks):
@@ -44,11 +44,11 @@ def main():
     db.drop()
 
     # error file set
-    error_file_set = Set()
+    error_file_set = set()
 
     # Filter out missing files
     for file in [f for f in args.gcov if not os.path.exists(f)]:
-        print "File %r does not exist" % file
+        print( "File %r does not exist" % file )
         sys.exit()
 
     # Read input line-by-line
@@ -62,7 +62,7 @@ def main():
             if func:
                 if func['lines']:
                     func['start'] = func['lines'][0]['lineno']
-                db.save(func)
+                db.insert_one(func)
             func = None
 
         # handle 1* (https://gcc.gnu.org/onlinedocs/gcc-8.1.0/gcc/Invoking-Gcov.html adds asterix)
@@ -80,7 +80,7 @@ def main():
         # This is only emitted with the '-u' flag
         if words[0] == 'unconditional':
             pass
-
+        
         # Pass call lines (gcc case)
         if words[0] == 'call':
             pass
@@ -92,7 +92,7 @@ def main():
             if func:
                 if func['lines']:
                     func['start'] = func['lines'][0]['lineno']
-                db.save(func)
+                db.insert_one(func)
             if words[5] == "NAN":
                 words[5] = "0%"
             func = function(finput.filename(), words[1], int(words[3]), int(words[5][:-1]), int(words[-1][:-1]))
@@ -103,8 +103,8 @@ def main():
             ## issues when gcov does not mark functions
             if func is None:
                 if finput.filename() not in error_file_set:
-                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
-                    print "I wont warn for that file anymore"
+                    print( "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename() )
+                    print( "I wont warn for that file anymore" )
                     error_file_set.add(finput.filename())
                 continue
             count  = int(words[0])
@@ -117,12 +117,12 @@ def main():
 
         # Begin a block within a source line
         # 1:   10-block  0
-        elif words[1].endswith('-block'):
+        elif len(words) > 1 and words[1].endswith('-block'):
             ## issues when gcov does not mark functions
             if func is None:
                 if finput.filename() not in error_file_set:
-                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
-                    print "I wont warn for that file anymore"
+                    print( "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename() )
+                    print( "I wont warn for that file anymore" )
                     error_file_set.add(finput.filename())
                 continue
             count    = int(words[0].rstrip(':'))
@@ -142,8 +142,8 @@ def main():
             ## issues when gcov does not mark functions
             if func is None:
                 if finput.filename() not in error_file_set:
-                    print "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename()
-                    print "I wont warn for that file anymore"
+                    print( "Error function not defined (might be an overwritten problem) at line " + words[1] + " in file " + finput.filename() )
+                    print( "I wont warn for that file anymore" )
                     error_file_set.add(finput.filename())
                 continue
             number = int(words[1])
@@ -153,10 +153,10 @@ def main():
             func['lines'][-1]['branches'].append(branch(number, count))
 
         else:
-            print "Got unknown line!\n%r" % line
+            print( "Got unknown line!\n%r" % line )
             sys.exit()
 
-    print "Parsed %i lines" % finput.lineno()
+    print( "Parsed %i lines" % finput.lineno() )
 
 
 if __name__ == '__main__':
